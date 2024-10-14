@@ -3,37 +3,134 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>To-Do List</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <title>Mayo</title>
+    <style>
+        /* Estilo básico da página */
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #74ebd5, #acb6e5);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            padding: 0 20px;
+        }
+
+        /* Estilo do container principal */
+        .container {
+            max-width: 500px;
+            width: 100%;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #007bff;
+            font-size: 2.2rem;
+            margin-bottom: 30px;
+        }
+
+        h3 {
+            color: #333;
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+        }
+
+        /* Estilo dos inputs */
+        input[type="text"], input[type="password"] {
+            width: 90%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+
+        /* Estilo dos botões */
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s ease;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        /* Estilo da lista de tarefas */
+        .task-list {
+            list-style-type: none;
+            padding: 0;
+            margin-top: 20px;
+        }
+
+        /* Estilo dos itens de tarefa */
+        .task-item {
+            padding: 15px;
+            margin: 10px 0;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 0.3s ease;
+        }
+
+        .task-item:hover {
+            background-color: #f1f1f1;
+        }
+
+        /* Estilo do botão de deletar tarefa */
+        .task-item button {
+            background-color: transparent;
+            border: none;
+            color: #dc3545;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+
+        .task-item button:hover {
+            color: #c82333;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <h1>To-Do List</h1>
+        <h1>Mayo</h1>
 
-        <!-- Formulário para login (se necessário) -->
+        <!-- Formulário de login -->
         <div id="loginForm">
-            <h3>Login</h3>
+            <h3>Login de Usuário</h3>
             <input type="text" id="username" placeholder="Username">
             <input type="password" id="password" placeholder="Password">
             <button onclick="login()">Login</button>
         </div>
 
-        <!-- Área para adicionar nova tarefa -->
-        <div id="taskForm">
-            <h3>Add a New Task</h3>
-            <input type="text" id="taskTitle" placeholder="Task Title">
-            <button onclick="addTask()">Add Task</button>
+        <!-- Formulário para adicionar nova tarefa -->
+        <div id="taskForm" style="display:none;">
+            <h3>Adicionar Nova Tarefa</h3>
+            <input type="text" id="taskTitle" placeholder="Título da Tarefa">
+            <button onclick="addTask()">Adicionar Tarefa</button>
         </div>
 
         <!-- Lista de tarefas -->
-        <h3>Your Tasks</h3>
+        <h3>Suas Tarefas</h3>
         <ul id="taskList" class="task-list"></ul>
     </div>
 
-    <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
-
     <script>
-        // Função de login para receber o token JWT
+        // Função de login para obter o token JWT
         function login() {
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
@@ -53,8 +150,72 @@
                     document.getElementById('taskForm').style.display = 'block';
                     listTasks();
                 } else {
-                    alert('Invalid credentials');
+                    alert('Credenciais inválidas');
                 }
+            });
+        }
+
+        // Função para adicionar nova tarefa
+        function addTask() {
+            const title = document.getElementById('taskTitle').value;
+
+            fetch('/tasks', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                },
+                body: JSON.stringify({ title: title })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.id) {
+                    listTasks();  // Atualiza a lista de tarefas
+                }
+            });
+        }
+
+        // Função para listar as tarefas
+        function listTasks() {
+            fetch('/tasks', {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                }
+            })
+            .then(response => response.json())
+            .then(tasks => {
+                const taskList = document.getElementById('taskList');
+                taskList.innerHTML = '';  // Limpa a lista atual
+
+                tasks.forEach(task => {
+                    const taskItem = document.createElement('li');
+                    taskItem.className = 'task-item';
+                    taskItem.textContent = task.title;
+
+                    // Botão de deletar tarefa
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = 'Delete';
+                    deleteBtn.onclick = function() {
+                        deleteTask(task.id);
+                    };
+
+                    taskItem.appendChild(deleteBtn);
+                    taskList.appendChild(taskItem);
+                });
+            });
+        }
+
+        // Função para deletar tarefa
+        function deleteTask(taskId) {
+            fetch(`/tasks/${taskId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                }
+            })
+            .then(() => {
+                listTasks();  // Atualiza a lista após deletar
             });
         }
     </script>
